@@ -3,6 +3,9 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /code
 
+# Set PYTHONPATH to include the backend directory for internal imports
+ENV PYTHONPATH=/code/backend
+
 # Copy requirements
 COPY ./requirements.txt /code/requirements.txt
 
