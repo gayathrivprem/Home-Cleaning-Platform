@@ -19,6 +19,9 @@ class settings:
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-2-9b-it:free")
 
+    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+
 def get_optional_user(token: Optional[str], db: Session) -> Optional[models.User]:
     if not token:
         return None
@@ -235,6 +238,21 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
                     print(f"OpenRouter API returned error status {res.status_code}: {res.text}")
         except Exception as e:
             print(f"OpenRouter API call failed: {e}")
+
+    # 3. Fallback to Ollama
+    try:
+        payload = {
+            "model": settings.OLLAMA_MODEL,
+            "messages": messages,
+            "stream": False,
+            "options": {"temperature": temperature}
+        }
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.post(settings.OLLAMA_URL, json=payload)
+            if res.status_code == 200:
+                return res.json()["message"]["content"]
+    except Exception as e:
+        print(f"Ollama call failed: {e}")
 
     raise RuntimeError("No LLM service available or configured API keys are invalid.")
 
