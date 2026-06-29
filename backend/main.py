@@ -392,3 +392,7 @@ def get_stats(admin_user: models.User = Depends(auth.get_current_admin), db: Ses
         "active_recurring_plans": active_recurring_plans
     }
 
+@app.get("/debug-env")
+def debug_env():
+    return {"env_keys": list(os.environ.keys())}
+
