@@ -15,7 +15,7 @@ CleanPro is a fully responsive, production-ready full-stack Enterprise Resource 
 * **Backend**: Python 3.11+, FastAPI, SQLAlchemy, Uvicorn, Python-Jose (JWT), Passlib (Bcrypt)
 * **Database**: PostgreSQL (Neon / Supabase) for production; SQLite for local development
 * **AI Engine**: Hugging Face Inference API (Free Tier) or OpenRouter Free Models
-* **Backend Hosting**: Koyeb (Free Tier)
+* **Backend Hosting**: Hugging Face Spaces (100% Free, No Credit Card Required)
 
 ---
 
@@ -40,7 +40,7 @@ Miniproject/
 │   ├── package.json
 │   ├── vercel.json        # Frontend deployment configuration
 │   └── vite.config.js
-├── Procfile               # Koyeb process configuration
+├── Dockerfile             # Hugging Face Spaces deployment config
 ├── requirements.txt       # Production Python dependencies
 ├── .env.example           # Reference environment configuration
 └── README.md              # Documentation
@@ -93,19 +93,23 @@ Open `http://localhost:5173` to view the app locally.
 2. Create a new project and select **PostgreSQL**.
 3. Copy the **Connection String** (which looks like `postgresql://user:password@host/dbname?sslmode=require`).
 
-### 2. Backend Deployment (Koyeb)
-1. Sign up on [Koyeb.com](https://www.koyeb.com/).
-2. Click **Create Service** and choose **GitHub** as the deployment source.
-3. Select your repository: **`Home-Cleaning-Platform`**.
-4. In the Koyeb builder settings:
-   * **Builder**: Choose **Buildpack** (it will auto-detect Python and the `Procfile`).
-   * **Run Command**: Let it default (or use `uvicorn backend.main:app --host 0.0.0.0 --port 8000` if needed).
-   * **Environment Variables**: Add the following:
-     * `DATABASE_URL`: Your Neon PostgreSQL Connection String.
-     * `SECRET_KEY`: A secure random secret key.
-     * `HUGGINGFACE_API_KEY`: Your free Hugging Face API Token.
-     * `ALLOWED_ORIGINS`: Comma-separated Vercel frontend URLs (e.g. `https://your-app.vercel.app`).
-5. Choose the **Free Instance** (micro) and click **Deploy**. Koyeb will build and host your backend for free.
+### 2. Backend Deployment (Hugging Face Spaces - 100% Free, No Card Required)
+1. Sign up/log in on [Hugging Face](https://huggingface.co/).
+2. Click on your profile picture in the top right and select **New Space**.
+3. Configure the Space settings:
+   * **Space name**: e.g., `cleanpro-backend`
+   * **SDK**: Select **Docker** (it will read our `Dockerfile` automatically).
+   * **Template**: Select **Blank**.
+   * **Visibility**: Public (so your Vercel frontend can call it).
+4. Click **Create Space**.
+5. Once created, go to the **Settings** tab of your Space, scroll to **Variables and secrets**, and click **New secret** to add the environment variables:
+   * `DATABASE_URL`: Your Neon PostgreSQL Connection String.
+   * `SECRET_KEY`: A secure random secret key (e.g., `supersecretkey`).
+   * `HUGGINGFACE_API_KEY`: Your free Hugging Face API token (from Account Settings -> Access Tokens).
+   * `ALLOWED_ORIGINS`: `*` (or your Vercel frontend URL).
+6. Upload your code to the Space by pushing it to the Space's Git remote (provided on your Space's page) or by linking your GitHub repository under Space Settings -> Github.
+7. Hugging Face will automatically build and run the Docker image. Once running, copy your Space's direct API endpoint URL:
+   * **Format:** `https://<username>-<spacename>.hf.space` (e.g., `https://gayathri-cleanpro-backend.hf.space`).
 
 ### 3. Frontend Deployment (Vercel)
 1. Sign up on [Vercel.com](https://vercel.com).
@@ -113,7 +117,7 @@ Open `http://localhost:5173` to view the app locally.
 3. Configure the Project settings:
    * **Framework Preset**: Vite
    * **Root Directory**: `frontend`
-   * **Environment Variables**: Add `VITE_API_BASE_URL` pointing to your Koyeb backend URL (e.g. `https://your-app.koyeb.app`).
+   * **Environment Variables**: Add `VITE_API_BASE_URL` pointing to your Hugging Face Space API URL (e.g., `https://gayathri-cleanpro-backend.hf.space`).
 4. Click **Deploy**. Vercel will build and deploy the React client.
 
 ---
@@ -121,4 +125,4 @@ Open `http://localhost:5173` to view the app locally.
 ## API Documentation
 Once the backend is running, the interactive Swagger UI and REST API documentation are available at:
 * Local: `http://localhost:8000/docs`
-* Production: `https://your-app.koyeb.app/docs`
+* Production: `https://<username>-<spacename>.hf.space/docs`
