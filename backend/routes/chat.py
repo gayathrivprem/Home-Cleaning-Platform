@@ -195,6 +195,8 @@ Return shape: {"intent": "...", "entities": {...}}
 """
 
 async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: int = 512) -> str:
+    errors = []
+
     # 1. Try Hugging Face Inference API
     if settings.HF_API_KEY:
         url = "https://api-inference.huggingface.co/v1/chat/completions"
@@ -211,9 +213,9 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
                 if res.status_code == 200:
                     return res.json()["choices"][0]["message"]["content"]
                 else:
-                    raise RuntimeError(f"Hugging Face API returned error status {res.status_code}: {res.text}")
+                    errors.append(f"Hugging Face API returned error status {res.status_code}: {res.text}")
         except Exception as e:
-            raise RuntimeError(f"Hugging Face API call failed: {e}")
+            errors.append(f"Hugging Face API call failed: {e}")
 
     # 2. Try OpenRouter as fallback
     if settings.OPENROUTER_API_KEY:
@@ -235,9 +237,9 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
                 if res.status_code == 200:
                     return res.json()["choices"][0]["message"]["content"]
                 else:
-                    raise RuntimeError(f"OpenRouter API returned error status {res.status_code}: {res.text}")
+                    errors.append(f"OpenRouter API returned error status {res.status_code}: {res.text}")
         except Exception as e:
-            raise RuntimeError(f"OpenRouter API call failed: {e}")
+            errors.append(f"OpenRouter API call failed: {e}")
 
     # 3. Fallback to Ollama
     try:
@@ -252,11 +254,11 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
             if res.status_code == 200:
                 return res.json()["message"]["content"]
             else:
-                raise RuntimeError(f"Ollama returned error status {res.status_code}: {res.text}")
+                errors.append(f"Ollama returned error status {res.status_code}: {res.text}")
     except Exception as e:
-        raise RuntimeError(f"Ollama call failed: {e}")
+        errors.append(f"Ollama call failed: {e}")
 
-    raise RuntimeError("No LLM service available or configured API keys are invalid.")
+    raise RuntimeError(" | ".join(errors) if errors else "No LLM service available or configured API keys are invalid.")
 
 async def detect_intent(message: str) -> dict:
     try:
