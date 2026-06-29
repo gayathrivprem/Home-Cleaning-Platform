@@ -15,6 +15,7 @@ CleanPro is a fully responsive, production-ready full-stack Enterprise Resource 
 * **Backend**: Python 3.11+, FastAPI, SQLAlchemy, Uvicorn, Python-Jose (JWT), Passlib (Bcrypt)
 * **Database**: PostgreSQL (Neon / Supabase) for production; SQLite for local development
 * **AI Engine**: Hugging Face Inference API (Free Tier) or OpenRouter Free Models
+* **Backend Hosting**: Koyeb (Free Tier)
 
 ---
 
@@ -39,7 +40,7 @@ Miniproject/
 │   ├── package.json
 │   ├── vercel.json        # Frontend deployment configuration
 │   └── vite.config.js
-├── render.yaml            # Render Blueprint specification
+├── Procfile               # Koyeb process configuration
 ├── requirements.txt       # Production Python dependencies
 ├── .env.example           # Reference environment configuration
 └── README.md              # Documentation
@@ -92,23 +93,27 @@ Open `http://localhost:5173` to view the app locally.
 2. Create a new project and select **PostgreSQL**.
 3. Copy the **Connection String** (which looks like `postgresql://user:password@host/dbname?sslmode=require`).
 
-### 2. Backend Deployment (Render)
-1. Sign up on [Render.com](https://render.com/).
-2. Create a **New Blueprints** project and connect your GitHub repository.
-3. Render will read `render.yaml` automatically and prompt you to input the environment variables:
-   * `DATABASE_URL`: Your Neon PostgreSQL Connection String.
-   * `SECRET_KEY`: A secure random secret key.
-   * `HUGGINGFACE_API_KEY`: Your free Hugging Face API Token.
-   * `ALLOWED_ORIGINS`: Comma-separated Vercel frontend URLs (e.g. `https://your-app.vercel.app`).
-4. Click deploy. Render will spin up the FastAPI service on their free Python tier.
+### 2. Backend Deployment (Koyeb)
+1. Sign up on [Koyeb.com](https://www.koyeb.com/).
+2. Click **Create Service** and choose **GitHub** as the deployment source.
+3. Select your repository: **`Home-Cleaning-Platform`**.
+4. In the Koyeb builder settings:
+   * **Builder**: Choose **Buildpack** (it will auto-detect Python and the `Procfile`).
+   * **Run Command**: Let it default (or use `uvicorn backend.main:app --host 0.0.0.0 --port 8000` if needed).
+   * **Environment Variables**: Add the following:
+     * `DATABASE_URL`: Your Neon PostgreSQL Connection String.
+     * `SECRET_KEY`: A secure random secret key.
+     * `HUGGINGFACE_API_KEY`: Your free Hugging Face API Token.
+     * `ALLOWED_ORIGINS`: Comma-separated Vercel frontend URLs (e.g. `https://your-app.vercel.app`).
+5. Choose the **Free Instance** (micro) and click **Deploy**. Koyeb will build and host your backend for free.
 
 ### 3. Frontend Deployment (Vercel)
-1. Sign up on [Vercel.com](https://vercel.json).
+1. Sign up on [Vercel.com](https://vercel.com).
 2. Click **Add New > Project** and import your GitHub repository.
 3. Configure the Project settings:
    * **Framework Preset**: Vite
    * **Root Directory**: `frontend`
-   * **Environment Variables**: Add `VITE_API_BASE_URL` pointing to your Render backend URL (e.g. `https://cleanpro-backend.onrender.com`).
+   * **Environment Variables**: Add `VITE_API_BASE_URL` pointing to your Koyeb backend URL (e.g. `https://your-app.koyeb.app`).
 4. Click **Deploy**. Vercel will build and deploy the React client.
 
 ---
@@ -116,4 +121,4 @@ Open `http://localhost:5173` to view the app locally.
 ## API Documentation
 Once the backend is running, the interactive Swagger UI and REST API documentation are available at:
 * Local: `http://localhost:8000/docs`
-* Production: `https://your-backend-url.onrender.com/docs`
+* Production: `https://your-app.koyeb.app/docs`
