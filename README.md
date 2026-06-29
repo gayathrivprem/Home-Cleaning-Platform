@@ -1,3 +1,13 @@
+---
+title: Home Cleaning Backend
+emoji: 🧹
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # CleanPro: Home Cleaning ERP AI Platform
 
 CleanPro is a fully responsive, production-ready full-stack Enterprise Resource Planning (ERP) and Scheduling web application designed for a home cleaning company. It runs entirely on **FREE services** without requiring any local installation for end-users.
