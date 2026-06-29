@@ -194,7 +194,7 @@ Return shape: {"intent": "...", "entities": {...}}
 async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: int = 512) -> str:
     # 1. Try Hugging Face Inference API
     if settings.HF_API_KEY:
-        url = f"https://api-inference.huggingface.co/models/{settings.HF_MODEL}/v1/chat/completions"
+        url = "https://api-inference.huggingface.co/v1/chat/completions"
         headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
         payload = {
             "model": settings.HF_MODEL,
