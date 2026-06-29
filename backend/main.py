@@ -392,17 +392,4 @@ def get_stats(admin_user: models.User = Depends(auth.get_current_admin), db: Ses
         "active_recurring_plans": active_recurring_plans
     }
 
-@app.get("/debug-env")
-def debug_env():
-    import socket
-    dns_results = {}
-    for host in ["api-inference.huggingface.co", "google.com", "ep-lucky-cake-ahws034i.c-3.us-east-1.aws.neon.tech"]:
-        try:
-            dns_results[host] = socket.gethostbyname(host)
-        except Exception as e:
-            dns_results[host] = f"Error: {e}"
-    return {
-        "env_keys": list(os.environ.keys()),
-        "dns": dns_results
-    }
 
