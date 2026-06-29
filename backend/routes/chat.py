@@ -211,9 +211,9 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
                 if res.status_code == 200:
                     return res.json()["choices"][0]["message"]["content"]
                 else:
-                    print(f"Hugging Face API returned error status {res.status_code}: {res.text}")
+                    raise RuntimeError(f"Hugging Face API returned error status {res.status_code}: {res.text}")
         except Exception as e:
-            print(f"Hugging Face API call failed: {e}")
+            raise RuntimeError(f"Hugging Face API call failed: {e}")
 
     # 2. Try OpenRouter as fallback
     if settings.OPENROUTER_API_KEY:
@@ -235,9 +235,9 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
                 if res.status_code == 200:
                     return res.json()["choices"][0]["message"]["content"]
                 else:
-                    print(f"OpenRouter API returned error status {res.status_code}: {res.text}")
+                    raise RuntimeError(f"OpenRouter API returned error status {res.status_code}: {res.text}")
         except Exception as e:
-            print(f"OpenRouter API call failed: {e}")
+            raise RuntimeError(f"OpenRouter API call failed: {e}")
 
     # 3. Fallback to Ollama
     try:
@@ -251,8 +251,10 @@ async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: i
             res = await client.post(settings.OLLAMA_URL, json=payload)
             if res.status_code == 200:
                 return res.json()["message"]["content"]
+            else:
+                raise RuntimeError(f"Ollama returned error status {res.status_code}: {res.text}")
     except Exception as e:
-        print(f"Ollama call failed: {e}")
+        raise RuntimeError(f"Ollama call failed: {e}")
 
     raise RuntimeError("No LLM service available or configured API keys are invalid.")
 
@@ -478,8 +480,10 @@ Tell the customer this naturally and ask if they'd like to book.
 
     try:
         reply = await call_llm(messages, temperature=0.7, max_tokens=512)
-    except Exception:
-        reply = "AI assistant is currently offline. Please configure Hugging Face or OpenRouter API keys in your environment."
+        if not reply:
+            raise ValueError("Empty reply from LLM")
+    except Exception as e:
+        reply = f"AI assistant is currently offline. Error details: {str(e)}"
 
     return schemas.ChatResponse(
         reply=reply,
