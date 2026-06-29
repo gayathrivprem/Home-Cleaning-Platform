@@ -1,92 +1,119 @@
-# CleanPro: Home Cleaning AI Scheduling & Appointment Management App
+# CleanPro: Home Cleaning ERP AI Platform
 
-CleanPro is a full-stack web application designed for a home cleaning company. Customers can register, book standard/deep/move cleanings, manage their appointments, and consult a friendly, local AI assistant (via Ollama) inside a floating chat bubble. Admins receive an overview dashboard containing operations metrics, customer databases, and booking control switches.
+CleanPro is a fully responsive, production-ready full-stack Enterprise Resource Planning (ERP) and Scheduling web application designed for a home cleaning company. It runs entirely on **FREE services** without requiring any local installation for end-users.
+
+## Features & Modules
+* **Customer Portal**: Booking management, appointment scheduling, recurring plans, billing/invoicing, profile settings.
+* **Admin Dashboard**: System metrics/analytics, active bookings status control, customer management, pricing configurations, staff management.
+* **AI Chatbot**: Real-time customer support chatbot, FAQ answering, booking assistance, and service recommendations using Hugging Face serverless Inference API (or OpenRouter) instead of local Ollama.
+* **Responsive Design**: Mobile-first premium user interface optimized for phones, tablets, laptops, and desktops.
+
+---
 
 ## Tech Stack
-
-- **Frontend:** React (Vite), React Router v6, Axios, Tailwind CSS, Lucide React (Icons)
-- **Backend:** Python 3.8+, FastAPI, SQLAlchemy, SQLite, python-jose (JWT), passlib (Bcrypt), httpx (Ollama integration)
-- **AI Engine:** Ollama running locally with `llama3.2:1b` (or other fallback models)
+* **Frontend**: React (Vite), React Router, Axios, Tailwind CSS, Lucide Icons
+* **Backend**: Python 3.11+, FastAPI, SQLAlchemy, Uvicorn, Python-Jose (JWT), Passlib (Bcrypt)
+* **Database**: PostgreSQL (Neon / Supabase) for production; SQLite for local development
+* **AI Engine**: Hugging Face Inference API (Free Tier) or OpenRouter Free Models
 
 ---
 
 ## Directory Structure
-
 ```text
 Miniproject/
 ├── backend/
-│   ├── .env               # JWT secrets & environment variables
-│   ├── main.py            # FastAPI endpoints & Ollama connection
-│   ├── database.py        # SQLAlchemy SQLite connection setup
-│   ├── models.py          # SQLAlchemy schemas (Users, Appointments)
+│   ├── routes/            # API Routers (auth, chat, staff, pricing, recurring, availability)
+│   ├── utils/             # Scheduling and database helper utilities
+│   ├── main.py            # FastAPI main application
+│   ├── database.py        # Database connection pool setup (Postgres/SQLite)
+│   ├── models.py          # SQLAlchemy models
 │   ├── schemas.py         # Pydantic validation schemas
-│   └── auth.py            # Password hashing and JWT helper functions
+│   └── auth.py            # JWT token signing & password hashing
 ├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── axios.js   # Intercepts headers to inject JWT
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── ChatWidget.jsx        # Floating chatbot UI
-│   │   │   ├── AppointmentCard.jsx   # Interactive status cards
-│   │   │   └── ProtectedRoute.jsx    # Guard for customer/admin access
-│   │   ├── pages/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── CustomerDashboard.jsx
-│   │   │   ├── BookAppointment.jsx
-│   │   │   ├── MyAppointments.jsx
-│   │   │   └── AdminDashboard.jsx
-│   │   ├── App.jsx        # Routes layout
-│   │   ├── index.css      # Tailwind styling entry
-│   │   └── main.jsx
-│   ├── tailwind.config.js
-│   └── package.json
-└── README.md
+│   ├── src/               # React application source code
+│   │   ├── api/axios.js   # Intercepted Axios instance
+│   │   ├── components/    # Navbar, ChatWidget, AppointmentCard, Skeletons, etc.
+│   │   ├── pages/         # Dashboard, Bookings, Pricing, Reviews, Admin Panels
+│   │   ├── App.jsx        # Routing & Layout
+│   │   └── main.jsx       # React entry
+│   ├── package.json
+│   ├── vercel.json        # Frontend deployment configuration
+│   └── vite.config.js
+├── render.yaml            # Render Blueprint specification
+├── requirements.txt       # Production Python dependencies
+├── .env.example           # Reference environment configuration
+└── README.md              # Documentation
 ```
-
----
-
-## Default Seeding Credentials
-
-On initial startup, the backend automatically seeds a default system admin account if not already present:
-- **Email:** `admin@cleanpro.com`
-- **Password:** `admin123`
 
 ---
 
 ## Setup & Running Locally
 
-### 1. AI Setup (Ollama)
-Ensure you have [Ollama](https://ollama.com) installed and running. Pull the default scheduling model:
+### 1. Backend Setup
+Navigate to the root directory and create a virtual environment:
 ```bash
-ollama pull llama3.2:1b
-```
-*(If Ollama is offline during usage, the chat widget automatically displays a clean support fallback message).*
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate   # On Windows
+source venv/bin/activate  # On macOS/Linux
 
-### 2. Backend Setup
-Navigate to the `backend/` directory, configure your environment, install dependencies, and start the development server:
+# Install dependencies
+pip install -r requirements.txt
+```
+
+Create a `.env` file inside the `backend/` directory or root based on `.env.example`:
+```env
+DATABASE_URL=sqlite:///./cleanpro.db
+SECRET_KEY=generate_your_own_secret_key_here
+HUGGINGFACE_API_KEY=your_hugging_face_token
+```
+
+Start the backend:
 ```bash
-cd backend
-
-# Install python dependencies
-pip install fastapi uvicorn sqlalchemy passlib[bcrypt] python-jose[cryptography] python-multipart httpx python-dotenv
-
-# Run the dev server on port 8000
-uvicorn main:app --reload --port 8000
+uvicorn backend.main:app --reload --port 8000
 ```
-This launches the backend API on `http://localhost:8000`. On first load, it creates the SQLite database (`cleanpro.db`) and seeds the admin user.
+*Note: Default admin credentials are automatically seeded: `admin@cleanpro.com` / `admin123`.*
 
-### 3. Frontend Setup
-Navigate to the `frontend/` directory, install packages, and spin up the Vite development server:
+### 2. Frontend Setup
+Navigate to the `frontend/` directory, install Node packages, and run the developer server:
 ```bash
 cd frontend
-
-# Install javascript packages (React, Router, Tailwind, Axios, Lucide)
 npm install
-
-# Start Vite dev server on http://localhost:5173
 npm run dev
 ```
+Open `http://localhost:5173` to view the app locally.
 
-Open `http://localhost:5173` in your browser. You can now register a customer account or log in with the admin credentials!
+---
+
+## Production Deployment (FREE Services)
+
+### 1. Database Setup (Neon PostgreSQL)
+1. Go to [Neon.tech](https://neon.tech/) and sign up for a free account.
+2. Create a new project and select **PostgreSQL**.
+3. Copy the **Connection String** (which looks like `postgresql://user:password@host/dbname?sslmode=require`).
+
+### 2. Backend Deployment (Render)
+1. Sign up on [Render.com](https://render.com/).
+2. Create a **New Blueprints** project and connect your GitHub repository.
+3. Render will read `render.yaml` automatically and prompt you to input the environment variables:
+   * `DATABASE_URL`: Your Neon PostgreSQL Connection String.
+   * `SECRET_KEY`: A secure random secret key.
+   * `HUGGINGFACE_API_KEY`: Your free Hugging Face API Token.
+   * `ALLOWED_ORIGINS`: Comma-separated Vercel frontend URLs (e.g. `https://your-app.vercel.app`).
+4. Click deploy. Render will spin up the FastAPI service on their free Python tier.
+
+### 3. Frontend Deployment (Vercel)
+1. Sign up on [Vercel.com](https://vercel.json).
+2. Click **Add New > Project** and import your GitHub repository.
+3. Configure the Project settings:
+   * **Framework Preset**: Vite
+   * **Root Directory**: `frontend`
+   * **Environment Variables**: Add `VITE_API_BASE_URL` pointing to your Render backend URL (e.g. `https://cleanpro-backend.onrender.com`).
+4. Click **Deploy**. Vercel will build and deploy the React client.
+
+---
+
+## API Documentation
+Once the backend is running, the interactive Swagger UI and REST API documentation are available at:
+* Local: `http://localhost:8000/docs`
+* Production: `https://your-backend-url.onrender.com/docs`

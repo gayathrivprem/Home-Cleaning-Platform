@@ -13,8 +13,11 @@ import auth
 router = APIRouter()
 
 class settings:
-    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+    HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_API_KEY") or os.getenv("HF_TOKEN")
+    HF_MODEL = os.getenv("HUGGINGFACE_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+    
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-2-9b-it:free")
 
 def get_optional_user(token: Optional[str], db: Session) -> Optional[models.User]:
     if not token:
@@ -188,22 +191,63 @@ Entities to extract:
 Return shape: {"intent": "...", "entities": {...}}
 """
 
+async def call_llm(messages: List[dict], temperature: float = 0.7, max_tokens: int = 512) -> str:
+    # 1. Try Hugging Face Inference API
+    if settings.HF_API_KEY:
+        url = f"https://api-inference.huggingface.co/models/{settings.HF_MODEL}/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
+        payload = {
+            "model": settings.HF_MODEL,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                res = await client.post(url, json=payload, headers=headers)
+                if res.status_code == 200:
+                    return res.json()["choices"][0]["message"]["content"]
+                else:
+                    print(f"Hugging Face API returned error status {res.status_code}: {res.text}")
+        except Exception as e:
+            print(f"Hugging Face API call failed: {e}")
+
+    # 2. Try OpenRouter as fallback
+    if settings.OPENROUTER_API_KEY:
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://cleanpro.onrender.com",
+            "X-Title": "CleanPro ERP"
+        }
+        payload = {
+            "model": settings.OPENROUTER_MODEL,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                res = await client.post(url, json=payload, headers=headers)
+                if res.status_code == 200:
+                    return res.json()["choices"][0]["message"]["content"]
+                else:
+                    print(f"OpenRouter API returned error status {res.status_code}: {res.text}")
+        except Exception as e:
+            print(f"OpenRouter API call failed: {e}")
+
+    raise RuntimeError("No LLM service available or configured API keys are invalid.")
+
 async def detect_intent(message: str) -> dict:
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            res = await client.post(settings.OLLAMA_URL, json={
-                "model": settings.OLLAMA_MODEL,
-                "messages": [
-                    {"role": "system", "content": INTENT_CLASSIFIER_PROMPT},
-                    {"role": "user", "content": message}
-                ],
-                "stream": False,
-                "options": {"num_predict": 150, "temperature": 0.0}
-            })
-            text = res.json()["message"]["content"].strip()
-            # Strip markdown fences if present
-            text = text.replace("```json", "").replace("```", "").strip()
-            return json.loads(text)
+        messages = [
+            {"role": "system", "content": INTENT_CLASSIFIER_PROMPT},
+            {"role": "user", "content": message}
+        ]
+        text = await call_llm(messages, temperature=0.0, max_tokens=150)
+        # Strip markdown fences if present
+        text = text.replace("```json", "").replace("```", "").strip()
+        return json.loads(text)
     except Exception:
         return {"intent": "general", "entities": {}}
 
@@ -415,15 +459,9 @@ Tell the customer this naturally and ask if they'd like to book.
     messages += [{"role": "user", "content": body.message}]
 
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.post(settings.OLLAMA_URL, json={
-                "model": settings.OLLAMA_MODEL,
-                "messages": messages,
-                "stream": False
-            })
-            reply = res.json()["message"]["content"]
+        reply = await call_llm(messages, temperature=0.7, max_tokens=512)
     except Exception:
-        reply = "AI assistant is currently offline. Please contact support@cleanpro.com."
+        reply = "AI assistant is currently offline. Please configure Hugging Face or OpenRouter API keys in your environment."
 
     return schemas.ChatResponse(
         reply=reply,

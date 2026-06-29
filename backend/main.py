@@ -26,14 +26,20 @@ Base.metadata.create_all(bind=engine)
 
 # Database column migrations check
 def run_migrations():
-    from sqlalchemy import text
+    from sqlalchemy import text, inspect
     try:
+        inspector = inspect(engine)
+        
+        # Check if tables exist before inspecting columns
+        if not inspector.has_table("users") or not inspector.has_table("appointments"):
+            # Table doesn't exist yet, metadata.create_all will handle it
+            return
+            
         with engine.begin() as conn:
             # 1. Update users table
-            result = conn.execute(text("PRAGMA table_info(users)"))
-            user_cols = [row[1] for row in result.fetchall()]
+            user_cols = [col["name"] for col in inspector.get_columns("users")]
             if "is_active" not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
                 print("Added column is_active to users table")
                 
             if "saved_addresses" not in user_cols:
@@ -53,8 +59,7 @@ def run_migrations():
                 print("Added column bio to users table")
                 
             # 2. Update appointments table
-            result = conn.execute(text("PRAGMA table_info(appointments)"))
-            appt_cols = [row[1] for row in result.fetchall()]
+            appt_cols = [col["name"] for col in inspector.get_columns("appointments")]
             
             if "num_rooms" not in appt_cols:
                 conn.execute(text("ALTER TABLE appointments ADD COLUMN num_rooms INTEGER DEFAULT 1"))
@@ -77,7 +82,7 @@ def run_migrations():
                 print("Added column recurring_schedule_id to appointments table")
                 
             if "is_recurring_instance" not in appt_cols:
-                conn.execute(text("ALTER TABLE appointments ADD COLUMN is_recurring_instance BOOLEAN DEFAULT 0"))
+                conn.execute(text("ALTER TABLE appointments ADD COLUMN is_recurring_instance BOOLEAN DEFAULT FALSE"))
                 print("Added column is_recurring_instance to appointments table")
                 
             if "completion_notes" not in appt_cols:
@@ -85,7 +90,7 @@ def run_migrations():
                 print("Added column completion_notes to appointments table")
                 
             if "completed_at" not in appt_cols:
-                conn.execute(text("ALTER TABLE appointments ADD COLUMN completed_at DATETIME"))
+                conn.execute(text("ALTER TABLE appointments ADD COLUMN completed_at TIMESTAMP"))
                 print("Added column completed_at to appointments table")
     except Exception as e:
         print(f"Migration error: {e}")
@@ -94,10 +99,18 @@ run_migrations()
 
 app = FastAPI(title="CleanPro API", description="AI Scheduling & Appointment Management API")
 
-# Configure CORS
+# Configure CORS dynamically
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
+if allowed_origins_env:
+    origins.extend([o.strip() for o in allowed_origins_env.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

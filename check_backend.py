@@ -1,10 +1,10 @@
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend'))
-from backend.database import SessionLocal, engine
-import backend.models as models
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend'))
+import main
+from database import SessionLocal
+import models
 
 db = SessionLocal()
 try:
